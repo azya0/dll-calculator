@@ -6,3 +6,6 @@
 
 # test files
 *test*
+
+# bat files
+.bat
