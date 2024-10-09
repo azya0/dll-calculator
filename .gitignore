@@ -1,0 +1,8 @@
+# vscode
+.vscode
+
+# builds
+*build*
+
+# test files
+*test*
