@@ -1,15 +1,8 @@
 #include "add.h"
 
-const char *getValue() noexcept {
-    return "+";
-}
 
-unsigned char getPriority() noexcept {
-    return 0;
-}
-
-unsigned char valueRequire() noexcept {
-    return 2;
+Data LIBRARY_EXPORT getData() noexcept {
+    return {"+", 0, 2};
 }
 
 double doMath(std::vector<double>& data) {

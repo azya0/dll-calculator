@@ -12,6 +12,12 @@
 
 using MapT = std::unordered_map<std::string, std::shared_ptr<Operator>>;
 
+typedef struct data {
+    const char * value;
+    unsigned char priority;
+    unsigned char valueRequire;
+} Data;
+
 class DllLoader {
 private:
     std::vector<HMODULE> loadedModules;

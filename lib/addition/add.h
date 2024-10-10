@@ -10,9 +10,13 @@
 #include <stdexcept>
 #include <vector>
 
-extern "C" const char* LIBRARY_EXPORT  getValue() noexcept;
-extern "C" unsigned char LIBRARY_EXPORT  getPriority() noexcept;
-extern "C" unsigned char LIBRARY_EXPORT  valueRequire() noexcept;
+typedef struct data {
+    const char * value;
+    unsigned char priority;
+    unsigned char valueRequire;
+} Data;
+
+extern "C" Data LIBRARY_EXPORT getData() noexcept;
 extern "C" double LIBRARY_EXPORT doMath(std::vector<double>& data);
 
 #endif

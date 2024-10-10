@@ -5,7 +5,7 @@ T getFunction(HMODULE module, const char * functionName) {
     auto function = (T)GetProcAddress(module, functionName);
 
     if (!function) {
-        throw std::runtime_error("has no " + std::string(functionName) + "function");
+        throw std::runtime_error("has no " + std::string(functionName) + " function");
     }
 
     return function;
@@ -36,23 +36,15 @@ DllLoader::DllLoader(std::string const &directory) {
 
             loadedModules.push_back(hModule);
 
-            std::string value = getValue<const char*, const char* (*)()>(
-                hModule, "getValue", path
-            );
-
-            unsigned char priority = getValue<unsigned char, unsigned char (*)()>(
-                hModule, "getPriority", path
-            );
-
-            unsigned char values = getValue<unsigned char, unsigned char (*)()>(
-                hModule, "valueRequire", path
+            Data data = getValue<Data, Data(*)()>(
+                hModule, "getData", path
             );
 
             auto function = getFunction<double (*)(std::vector<double>&)>(hModule, "doMath");
 
-            (*operators)[value] = std::make_shared<Operator>(Operator(
+            (*operators)[data.value] = std::make_shared<Operator>(Operator(
                 std::make_shared<std::function<double(std::vector<double>&)>>(function),
-                priority, values
+                data.priority, data.valueRequire
             ));
         }
     }
