@@ -1,8 +1,6 @@
 #include "rpn.h"
 
-bool RPN::isDigit(int index) {
-    char letter = expression[index];
-
+bool isDigit(char const & letter) {
     return letter >= '0' && letter <= '9';
 }
 
@@ -26,20 +24,61 @@ double power(double value, int power) {
     return result;
 }
 
-std::shared_ptr<Value> RPN::parseNumber(int& index) {
-    double value = 0;
-    bool isLetter = false;
+template <typename T>
+std::shared_ptr<T> find(MapT<T> const & map, std::string const & value) {
+    auto iterator = map.find(value);
 
-    for (; index < expression.size(); index++) {
-        if (isDigit(index)) {
-            value = value * 10 + static_cast<double>(expression[index] - '0');
+    if (iterator == map.end()) {
+        throw std::runtime_error("unknown operator \"" + value + "\"");
+    }
+
+    return iterator->second;
+}
+
+void RPN::emptyBrackets(std::stack<OperT>& stack, QueueT& queue) const {
+    bool wasBracket = false;
+    int counter = 0;
+
+    while (!stack.empty()) {
+        auto oper = stack.top().second;
+
+        if (oper->getValue() == "(") {
+            wasBracket = true;
         } else {
-            isLetter = true;
+            queue.push(oper);
+            counter++;
+        }
+
+        stack.pop();
+
+        if (wasBracket) {
             break;
         }
     }
 
-    if (!(isLetter && expression[index] == '.')) {
+    if (!wasBracket) {
+        throw std::runtime_error("missing \"(\"");
+    }
+
+    if (counter == 0) {
+        throw std::runtime_error("empty brackets");
+    }
+}
+
+std::shared_ptr<Value> RPN::parseNumber(int& index) const {
+    double value = 0;
+    auto letter = std::make_shared<char>();
+
+    for (; index < expression.size(); index++) {
+        *letter = expression[index];
+        if (isDigit(*letter)) {
+            value = value * 10 + static_cast<double>((*letter) - '0');
+        } else {
+            break;
+        }
+    }
+
+    if (!(letter != nullptr && (*letter) == '.')) {
         return std::make_shared<Value>(value);
     }
 
@@ -47,8 +86,9 @@ std::shared_ptr<Value> RPN::parseNumber(int& index) {
     bool wasDigit = false;
 
     for (int counter = -1; index < expression.size(); index++, counter--) {
-        if (isDigit(index)) {
-            value += static_cast<double>(expression[index] - '0') * power(10, counter);
+        *letter = expression[index];
+        if (isDigit(*letter)) {
+            value += static_cast<double>((*letter) - '0') * power(10, counter);
 
             if (!wasDigit) {
                 wasDigit = true;
@@ -65,69 +105,97 @@ std::shared_ptr<Value> RPN::parseNumber(int& index) {
     return std::make_shared<Value>(value);
 }
 
-std::shared_ptr<Operator> RPN::parseOperator(int& index) {
+std::shared_ptr<RPN::OperT> RPN::parseOperator(int& index, bool wasDigit) const {
     std::string value;
-    char letter;
+    auto letter = std::make_shared<char>();
 
     for (; index < expression.size(); index++) {
-        if (!isDigit(index) && (letter = expression[index]) != ' ') {
-            value.push_back(letter);
+        *letter = expression[index]; 
+
+        if (!isDigit(*letter) && (*letter) != ' ') {
+            value.push_back(*letter);
         } else {
             break;
         }
-    } 
-
-    auto iterator = operators->find(value);
-    if (iterator == operators->end()) {
-        throw std::runtime_error("unknown operator \"" + value + "\"");
     }
 
-    return iterator->second;
+    std::shared_ptr<UnaryOperator> result;
+
+    if (!wasDigit) {
+        result = find<UnaryOperator>(*operators.second, value);
+    } else {
+        result = find<Operator>(*operators.first, value);
+    }
+
+    return std::make_shared<OperT>(OperT({!wasDigit, result}));    
 }
 
-std::shared_ptr<RPN::QueueT> RPN::buildExpression() {
+std::shared_ptr<RPN::QueueT> RPN::buildExpression() const {
+    std::stack<OperT> stack;
     auto result = std::make_shared<QueueT>();
-    std::stack<std::shared_ptr<Operator>> stack;
+    bool wasDigit = false;
 
     for (int index = 0; index < expression.size();) {
-        if (isDigit(index)) {
-            auto value = parseNumber(index);
-            result->push(value);
+        if (isDigit(expression[index])) {
+            result->push(parseNumber(index));
+            wasDigit = true;
+            continue;
         } else if (expression[index] == ' ') {
             index++;
             continue;
+        }
+
+        if (expression[index] == '(') {
+            stack.push({true, std::make_shared<UnaryOperator>(nullptr, "(")});
+            index++;
+        } else if (expression[index] == ')') {
+            emptyBrackets(stack, *result);
+            index++;
         } else {
-            auto oper = parseOperator(index);
+            auto &[isUnar, oper] = *parseOperator(index, wasDigit);
 
             if (stack.empty()) {
-                stack.push(oper);
+                stack.push({isUnar, oper});
                 continue;
             }
 
             while (!stack.empty()) {
-                auto& previous = stack.top();
+                auto &[isPrevUnar, previous] = stack.top();
 
-                if (previous->getPriority() < oper->getPriority()) {
+                if (isUnar) {
+                    if (isPrevUnar && (previous->getValue() == "(")) {
+                        break;
+                    }
+                } else if (isPrevUnar) {
                     break;
+                } else {
+                    unsigned char prevPriority = std::static_pointer_cast<Operator>(previous)->getPriority();
+                    unsigned char operPriority = std::static_pointer_cast<Operator>(oper)->getPriority();
+
+                    if (prevPriority < operPriority) {
+                        break;
+                    }
                 }
 
                 result->push(previous);
                 stack.pop();
             }
 
-            stack.push(oper);
+            stack.push({isUnar, oper});
         }
+
+        wasDigit = false;
     }
 
     while (!stack.empty()) {
-        result->push(stack.top());
+        result->push(stack.top().second);
         stack.pop();
     }
 
     return result;
 }
 
-double RPN::solveExpression(QueueT &queue) {
+double RPN::solveExpression(QueueT &queue) const {
     auto stack = std::make_shared<StackT>();
 
     while (!queue.empty()) {
@@ -138,8 +206,8 @@ double RPN::solveExpression(QueueT &queue) {
             queue.pop();
             continue;
         }
-            
-        auto oper = std::dynamic_pointer_cast<Operator>(queue.front());
+
+        auto oper = std::dynamic_pointer_cast<UnaryOperator>(queue.front());
 
         if (oper == nullptr) {
             throw std::runtime_error("unexpected error");
@@ -156,12 +224,10 @@ double RPN::solveExpression(QueueT &queue) {
     return std::static_pointer_cast<Value>(stack->top())->getValue();
 }
 
-RPN::RPN(std::shared_ptr<MapT const> _operators) noexcept {
-    operators = std::make_shared<MapT const>(*_operators);
-}
+RPN::RPN(PairT& _operators) noexcept : operators(_operators) {}
 
-double RPN::solve(std::string expression) {
-    this->expression = expression;
+double RPN::solve(std::string _expression) {
+    expression = _expression;
 
     return solveExpression(*buildExpression());
 }

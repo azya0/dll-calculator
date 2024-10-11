@@ -6,25 +6,18 @@
 #include <memory>
 #include <windows.h>
 #include <filesystem>
-#include <string>
 
-#include "../interface/interfaces.h"
-
-using MapT = std::unordered_map<std::string, std::shared_ptr<Operator>>;
-
-typedef struct data {
-    const char * value;
-    unsigned char priority;
-    unsigned char valueRequire;
-} Data;
+#include "../../lib/dllData.h"
+#include "../types/types.h"
 
 class DllLoader {
 private:
     std::vector<HMODULE> loadedModules;
-    std::shared_ptr<MapT> operators = std::make_shared<MapT>();
+    std::shared_ptr<MapT<Operator>> operators;
+    std::shared_ptr<MapT<UnaryOperator>> unaryOperators;
 public:
     DllLoader(std::string const & directory);
     ~DllLoader();
 
-    std::shared_ptr<MapT const> getOperators() const;
+    std::shared_ptr<PairT> getOperators() const;
 };

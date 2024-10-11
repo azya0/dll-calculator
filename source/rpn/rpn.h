@@ -3,30 +3,27 @@
 #include <queue>
 #include <unordered_map>
 
-// Удалить
-#include <iostream>
-
-#include "../interface/interfaces.h"
+#include "../types/types.h"
 
 class RPN {
 private:
     using QueueT = std::queue<std::shared_ptr<Token>>;
-    using MapT = std::unordered_map<std::string, std::shared_ptr<Operator>>;
+    using OperT = std::pair<bool, std::shared_ptr<UnaryOperator>>;
 
-    std::shared_ptr<MapT const> operators;
+    PairT& operators;
     std::string expression;
 
-    bool isDigit(int index);
+    void emptyBrackets(std::stack<OperT>& stack, QueueT& queue) const;
 
-    std::shared_ptr<Value> parseNumber(int& index);
+    std::shared_ptr<Value> parseNumber(int& index) const;
 
-    std::shared_ptr<Operator> parseOperator(int& index);
+    std::shared_ptr<OperT> parseOperator(int& index, bool wasDigit) const;
 
-    std::shared_ptr<QueueT> buildExpression();
+    std::shared_ptr<QueueT> buildExpression() const;
 
-    double solveExpression(QueueT& queue);
+    double solveExpression(QueueT& queue) const;
 public:
-    RPN(std::shared_ptr<MapT const> operators) noexcept;
+    RPN(PairT& operators) noexcept;
 
     double solve(std::string expression);
 };

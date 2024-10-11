@@ -1,23 +1,23 @@
 #include "../dllScheme.h"
 
 Data LIBRARY_EXPORT getData() noexcept {
-    return {"/", 1, false};
+    return {"-", 0, false};
 }
 
 void doMath(StackT& stack) {
     if (stack.size() < 2) {
-        throw std::runtime_error("Deductional operator require 2 values");
+        throw std::runtime_error("Subtractional operator require 2 values");
     }
 
-    double result = 1;
+    double result = 0;
 
     for (unsigned char index = 0; index < 2; index++) {
         double value = stack.top()->getValue();
         
         if (index == 0) {
-            result /= value;   
+            result -= value;
         } else {
-            result *= value;
+            result += value;
         }
 
         stack.pop();

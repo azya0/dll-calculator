@@ -1,13 +1,21 @@
-#include "mul.h"
+#include "../dllScheme.h"
 
 Data LIBRARY_EXPORT getData() noexcept {
-    return {"*", 1, 2};
+    return {"*", 1, false};
 }
 
-double doMath(std::vector<double>& data) {
-    if (data.size() < 2) {
-        throw std::runtime_error("Multiplicational function has lower than 2 value");
+void doMath(StackT& stack) {
+    if (stack.size() < 2) {
+        throw std::runtime_error("Multiplicational operator require 2 values");
     }
 
-    return data[0] * data[1];
+    double result = 1;
+
+    for (unsigned char _ = 0; _ < 2; _++) {
+        result *= stack.top()->getValue();
+
+        stack.pop();
+    }
+
+    stack.push(std::make_shared<Value>(result));
 }

@@ -5,6 +5,8 @@ project(calculator)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+file(GLOB_RECURSE INTERFACES "interface/*.cpp")
+
 file(GLOB SUBDIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "lib/*/")
 
 set(OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/operators")
@@ -29,4 +31,4 @@ endforeach()
 
 file(GLOB_RECURSE SOURCES "source/*.cpp")
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${INTERFACES} ${SOURCES})

@@ -23,7 +23,7 @@ int main() {
     std::getline(std::cin, expression);
 
     try {
-        std::cout << RPN(loader->getOperators()).solve(expression);
+        std::cout << RPN(*loader->getOperators()).solve(expression);
     } catch(std::exception& error) {
         return printException(error);
     }

@@ -23,11 +23,15 @@ vT getValue(HMODULE module, const char * functionName, std::string& path) {
 }
 
 DllLoader::DllLoader(std::string const &directory) {
+    operators = std::make_shared<MapT<Operator>>();
+    unaryOperators = std::make_shared<MapT<UnaryOperator>>();
+
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
         if (entry.path().extension() == ".dll") {
             std::string path = entry.path().string();
-            // без std::wstring он не хочет принимать path.c_str()
+            // without std::wstring default path.c_str() throwing error
             std::wstring wpath = std::wstring(path.begin(), path.end());
+            
             HMODULE hModule = LoadLibraryW(wpath.c_str());
             
             if (!hModule) {
@@ -39,13 +43,15 @@ DllLoader::DllLoader(std::string const &directory) {
             Data data = getValue<Data, Data(*)()>(
                 hModule, "getData", path
             );
+            
+            auto function = getFunction<void(*)(StackT&)>(hModule, "doMath");
+            auto funcPtr = std::make_shared<FuncT>(function);
 
-            auto function = getFunction<double (*)(std::vector<double>&)>(hModule, "doMath");
-
-            (*operators)[data.value] = std::make_shared<Operator>(Operator(
-                std::make_shared<std::function<double(std::vector<double>&)>>(function),
-                data.priority, data.valueRequire
-            ));
+            if (data.isUnary) {
+                (*unaryOperators)[data.value] = std::make_shared<UnaryOperator>(funcPtr, data.value);
+            } else {
+                (*operators)[data.value] = std::make_shared<Operator>(funcPtr, data.value, data.priority);
+            }
         }
     }
 }
@@ -56,6 +62,9 @@ DllLoader::~DllLoader() {
     }
 }
 
-std::shared_ptr<MapT const> DllLoader::getOperators() const {
-    return std::make_shared<MapT const>(*operators);
+std::shared_ptr<PairT> DllLoader::getOperators() const {    
+    return std::make_shared<PairT>(PairT({
+        std::make_shared<MapT<Operator> const>(*operators),
+        std::make_shared<MapT<UnaryOperator> const>(*unaryOperators)
+    }));
 }

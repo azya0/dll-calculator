@@ -1,14 +1,21 @@
-#include "add.h"
-
+#include "../dllScheme.h"
 
 Data LIBRARY_EXPORT getData() noexcept {
-    return {"+", 0, 2};
+    return {"+", 0, false};
 }
 
-double doMath(std::vector<double>& data) {
-    if (data.size() < 2) {
-        throw std::runtime_error("Additional function has lower than 2 value");
+void LIBRARY_EXPORT doMath(StackT& stack) {
+    if (stack.size() < 2) {
+        throw std::runtime_error("Additional operator require 2 values");
     }
 
-    return data[0] + data[1];
+    double result = 0;
+
+    for (unsigned char _ = 0; _ < 2; _++) {
+        result += stack.top()->getValue();
+
+        stack.pop();
+    }
+
+    stack.push(std::make_shared<Value>(result));
 }
