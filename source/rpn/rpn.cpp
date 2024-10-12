@@ -172,6 +172,7 @@ std::shared_ptr<RPN::QueueT> RPN::buildExpression() const {
 
             if (stack.empty()) {
                 stack.push({isUnar, oper});
+                wasDigit = false;
                 continue;
             }
 
@@ -179,7 +180,7 @@ std::shared_ptr<RPN::QueueT> RPN::buildExpression() const {
                 auto &[isPrevUnar, previous] = stack.top();
 
                 if (isUnar) {
-                    if (isPrevUnar && (previous->getValue() == "(")) {
+                    if (!isPrevUnar || previous->getValue() == "(") {
                         break;
                     }
                 } else if (isPrevUnar) {
