@@ -15,6 +15,8 @@ private:
 
     void emptyBrackets(std::stack<OperT>& stack, QueueT& queue) const;
 
+    std::shared_ptr<UnaryOperator> getOperator(std::string const & substr, bool isUnar) const;
+
     std::shared_ptr<Value> parseNumber(int& index) const;
 
     std::shared_ptr<OperT> parseOperator(int& index, bool wasDigit) const;

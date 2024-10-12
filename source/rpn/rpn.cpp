@@ -29,7 +29,7 @@ std::shared_ptr<T> find(MapT<T> const & map, std::string const & value) {
     auto iterator = map.find(value);
 
     if (iterator == map.end()) {
-        throw std::runtime_error("unknown operator \"" + value + "\"");
+        return nullptr;
     }
 
     return iterator->second;
@@ -63,6 +63,18 @@ void RPN::emptyBrackets(std::stack<OperT>& stack, QueueT& queue) const {
     if (counter == 0) {
         throw std::runtime_error("empty brackets");
     }
+}
+
+std::shared_ptr<UnaryOperator> RPN::getOperator(std::string const &substr, bool isUnar) const {
+    std::shared_ptr<UnaryOperator> result;
+
+    if (isUnar) {
+        result = find<UnaryOperator>(*operators.second, substr);
+    } else {
+        result = find<Operator>(*operators.first, substr);
+    }
+
+    return result;
 }
 
 std::shared_ptr<Value> RPN::parseNumber(int& index) const {
@@ -108,23 +120,26 @@ std::shared_ptr<Value> RPN::parseNumber(int& index) const {
 std::shared_ptr<RPN::OperT> RPN::parseOperator(int& index, bool wasDigit) const {
     std::string value;
     auto letter = std::make_shared<char>();
+    std::shared_ptr<UnaryOperator> result;
 
-    for (; index < expression.size(); index++) {
-        *letter = expression[index]; 
+    while (index < expression.size()) {
+        *letter = expression[index++];
 
-        if (!isDigit(*letter) && (*letter) != ' ') {
-            value.push_back(*letter);
-        } else {
+        if (isDigit(*letter) || !((*letter) != ' ')) {
+            break;
+        }
+
+        value.push_back(*letter);
+
+        result = getOperator(value, !wasDigit);
+
+        if (result != nullptr) {
             break;
         }
     }
 
-    std::shared_ptr<UnaryOperator> result;
-
-    if (!wasDigit) {
-        result = find<UnaryOperator>(*operators.second, value);
-    } else {
-        result = find<Operator>(*operators.first, value);
+    if (result == nullptr) {
+        throw std::runtime_error("unknown operator \"" + value + "\"");
     }
 
     return std::make_shared<OperT>(OperT({!wasDigit, result}));    
@@ -140,16 +155,17 @@ std::shared_ptr<RPN::QueueT> RPN::buildExpression() const {
             result->push(parseNumber(index));
             wasDigit = true;
             continue;
-        } else if (expression[index] == ' ') {
+        } else if (expression[index] == ' ' || expression[index] == ')') { 
+            if (expression[index] == ')') {
+                emptyBrackets(stack, *result);
+            }
+
             index++;
             continue;
         }
 
         if (expression[index] == '(') {
             stack.push({true, std::make_shared<UnaryOperator>(nullptr, "(")});
-            index++;
-        } else if (expression[index] == ')') {
-            emptyBrackets(stack, *result);
             index++;
         } else {
             auto &[isUnar, oper] = *parseOperator(index, wasDigit);
