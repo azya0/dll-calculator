@@ -1,4 +1,4 @@
-# calculator with .dll operations
+# Calculator with .dll operations
 
 Calculator logic that works with **any** operators written in .dll
 
@@ -27,7 +27,7 @@ ninja
 > 3.0404
 ```
 
-## how to write .dll?
+## How to write .dll?
 
 1. Use [dllScheme.h](https://github.com/azya0/dll-calculator/blob/main/lib/dllScheme.h)
 
