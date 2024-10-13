@@ -35,6 +35,42 @@ std::shared_ptr<T> find(MapT<T> const & map, std::string const & value) {
     return iterator->second;
 }
 
+void RPN::emptyOperStack(
+    bool isUnar, std::shared_ptr<UnaryOperator> oper,
+    std::stack<OperT>& stack, std::shared_ptr<RPN::QueueT> queue
+) const {
+    if (stack.empty()) {
+        stack.push({isUnar, oper});
+        return;
+    }
+
+    while (!stack.empty()) {
+        auto &[isPrevUnar, previous] = stack.top();
+
+        if (previous->getValue() == "(") {
+            break;
+        }
+
+        if (!isPrevUnar) {
+            if (isUnar) {
+                break;
+            } else {
+                unsigned char prevPriority = std::static_pointer_cast<Operator>(previous)->getPriority();
+                unsigned char operPriority = std::static_pointer_cast<Operator>(oper)->getPriority();
+
+                if (prevPriority < operPriority) {
+                    break;
+                }
+            }
+        }
+
+        queue->push(previous);
+        stack.pop();
+    }
+
+    stack.push({isUnar, oper});
+}
+
 void RPN::emptyBrackets(std::stack<OperT>& stack, QueueT& queue, bool wasDigit) const {
     bool wasBracket = false;
     int counter = 0;
@@ -66,15 +102,11 @@ void RPN::emptyBrackets(std::stack<OperT>& stack, QueueT& queue, bool wasDigit) 
 }
 
 std::shared_ptr<UnaryOperator> RPN::getOperator(std::string const &substr, bool isUnar) const {
-    std::shared_ptr<UnaryOperator> result;
-
     if (isUnar) {
-        result = find<UnaryOperator>(*operators.second, substr);
-    } else {
-        result = find<Operator>(*operators.first, substr);
+        return find<UnaryOperator>(*operators.second, substr);
     }
 
-    return result;
+    return find<Operator>(*operators.first, substr);
 }
 
 std::shared_ptr<Value> RPN::parseNumber(int& index) const {
@@ -170,37 +202,7 @@ std::shared_ptr<RPN::QueueT> RPN::buildExpression() const {
         } else {
             auto &[isUnar, oper] = *parseOperator(index, wasDigit);
 
-            if (stack.empty()) {
-                stack.push({isUnar, oper});
-                wasDigit = false;
-                continue;
-            }
-
-            while (!stack.empty()) {
-                auto &[isPrevUnar, previous] = stack.top();
-
-                if (previous->getValue() == "(") {
-                    break;
-                }
-
-                if (!isPrevUnar) {
-                    if (isUnar) {
-                        break;
-                    } else {
-                        unsigned char prevPriority = std::static_pointer_cast<Operator>(previous)->getPriority();
-                        unsigned char operPriority = std::static_pointer_cast<Operator>(oper)->getPriority();
-
-                        if (prevPriority < operPriority) {
-                            break;
-                        }
-                    }
-                }
-
-                result->push(previous);
-                stack.pop();
-            }
-
-            stack.push({isUnar, oper});
+            emptyOperStack(isUnar, oper, stack, result);
         }
 
         wasDigit = false;

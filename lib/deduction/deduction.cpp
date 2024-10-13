@@ -15,6 +15,10 @@ void doMath(StackT& stack) {
         double value = stack.top()->getValue();
         
         if (index == 0) {
+            if (value == 0) {
+                throw std::runtime_error("Deductional zero value");
+            }
+            
             result /= value;   
         } else {
             result *= value;
