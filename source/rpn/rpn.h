@@ -12,8 +12,13 @@ private:
 
     PairT& operators;
     std::string expression;
-
+    
     void emptyBrackets(std::stack<OperT>& stack, QueueT& queue, bool wasDigit) const;
+
+    void emptyOperStack(
+        bool isUnar, std::shared_ptr<UnaryOperator> oper,
+        std::stack<OperT>& stack, std::shared_ptr<RPN::QueueT> queue
+    ) const;
 
     std::shared_ptr<UnaryOperator> getOperator(std::string const & substr, bool isUnar) const;
 
