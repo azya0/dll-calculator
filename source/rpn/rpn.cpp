@@ -35,7 +35,7 @@ std::shared_ptr<T> find(MapT<T> const & map, std::string const & value) {
     return iterator->second;
 }
 
-void RPN::emptyBrackets(std::stack<OperT>& stack, QueueT& queue) const {
+void RPN::emptyBrackets(std::stack<OperT>& stack, QueueT& queue, bool wasDigit) const {
     bool wasBracket = false;
     int counter = 0;
 
@@ -60,7 +60,7 @@ void RPN::emptyBrackets(std::stack<OperT>& stack, QueueT& queue) const {
         throw std::runtime_error("missing \"(\"");
     }
 
-    if (counter == 0) {
+    if (counter == 0 && !wasDigit) {
         throw std::runtime_error("empty brackets");
     }
 }
@@ -157,7 +157,7 @@ std::shared_ptr<RPN::QueueT> RPN::buildExpression() const {
             continue;
         } else if (expression[index] == ' ' || expression[index] == ')') { 
             if (expression[index] == ')') {
-                emptyBrackets(stack, *result);
+                emptyBrackets(stack, *result, wasDigit);
             }
 
             index++;
@@ -179,18 +179,20 @@ std::shared_ptr<RPN::QueueT> RPN::buildExpression() const {
             while (!stack.empty()) {
                 auto &[isPrevUnar, previous] = stack.top();
 
-                if (isUnar) {
-                    if (!isPrevUnar || previous->getValue() == "(") {
-                        break;
-                    }
-                } else if (isPrevUnar) {
+                if (previous->getValue() == "(") {
                     break;
-                } else {
-                    unsigned char prevPriority = std::static_pointer_cast<Operator>(previous)->getPriority();
-                    unsigned char operPriority = std::static_pointer_cast<Operator>(oper)->getPriority();
+                }
 
-                    if (prevPriority < operPriority) {
+                if (!isPrevUnar) {
+                    if (isUnar) {
                         break;
+                    } else {
+                        unsigned char prevPriority = std::static_pointer_cast<Operator>(previous)->getPriority();
+                        unsigned char operPriority = std::static_pointer_cast<Operator>(oper)->getPriority();
+
+                        if (prevPriority < operPriority) {
+                            break;
+                        }
                     }
                 }
 
