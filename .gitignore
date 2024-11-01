@@ -1,0 +1,11 @@
+# vscode
+.vscode
+
+# builds
+*build*
+
+# test files
+*test*
+
+# bat files
+*.bat
